@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>😻 Feed The Bastards 😻</title>
+        <style>
+            body { font-family: sans-serif; text-align: center; margin-top: 3em; }
+            button { padding: 0.5em 1em; font-size: 1.2em; }
+        </style>
+    </head>
+    <body>
+        <h1>🐈 Miaou Homepage 🐈</h1>
+        <button onclick="fetch('/api/status').then(r => r.json()).then(j => alert(JSON.stringify(j)))">
+            Get Status
+        </button>
+    </body>
+</html>

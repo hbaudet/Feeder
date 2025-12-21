@@ -1,0 +1,112 @@
+{
+    "ioMatrix": {
+        "feederOut": ["FeederMotor"],
+        "audioOut" : ["Network"],
+        "lightOut" : ["Arduino"],
+        "hmiLed" : ["Value1", "Value2", "Value3", "Value4", "pgmState", "lock" ]
+    },
+    "triggers": [
+        {
+            "type": "feeder",
+            "hour": 8,
+            "minute": 30,
+            "doses": 3
+        },
+        {
+            "type": "feeder",
+            "hour": 14,
+            "minute": 0,
+            "doses": 2
+        },
+        {
+            "type": "feeder",
+            "hour": 19,
+            "minute": 0,
+            "doses": 2
+        },
+        {
+            "type": "feeder",
+            "hour": 23,
+            "minute": 0,
+            "doses": 3
+        }
+    ],
+    "inputs": [
+        {
+            "type": "MasterLock",
+            "gpio": 32,
+            "lockable": false
+        },
+        {
+            "type": "Mode",
+            "gpio": 33
+        },
+        {
+            "type": "Action",
+            "gpio": 25
+        },
+        {
+            "type": "ValueChange",
+            "gpio": 26
+        },
+        {
+            "type": "MotorTrigger",
+            "gpio": 27,
+            "lockable": false
+        }
+    ],
+    "outputs": [
+        {
+            "type": "led",
+            "mask": 2,
+            "name": "Value1",
+            "gpio": 4
+        },
+        {
+            "type": "led",
+            "mask": 4,
+            "name": "Value2",
+            "gpio": 0
+        },
+        {
+            "type": "led",
+            "mask": 8,
+            "name": "Value3",
+            "gpio": 2
+        },
+        {
+            "type": "led",
+            "mask": 16,
+            "name": "Value4",
+            "gpio": 19
+        },
+        {
+            "type": "led",
+            "mask": 96,
+            "name": "pgmState",
+            "gpio": 18
+        },
+        {
+            "type": "led",
+            "mask": 1,
+            "name": "lock",
+            "gpio": 5
+        },
+        {
+            "type": "audio",
+            "name": "Network",
+            "channel": "mqtt"
+        },
+        {
+            "type": "strip",
+            "name": "Arduino",
+            "channel": "serial"
+        },
+        {
+            "type": "motor",
+            "name": "FeederMotor",
+            "speed": 1023,
+            "gpio": [12, 14, 13]
+        }
+    ]
+}

@@ -1,0 +1,4 @@
+nvs,        data,   nvs,         0xA000,   0x5000,
+phy_init,   data,   phy,         0xf000,   0x1000,
+factory,    app,    factory,    0x10000, 0x1ED000,
+spiffs,     data,   spiffs,            ,   0x3000,
