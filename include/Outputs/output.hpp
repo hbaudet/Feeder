@@ -26,17 +26,18 @@ enum class OutputEvent {
 
 class Output {
     public:
-        virtual             ~Output() = default;
-                            Output() = delete;
-                            Output(const Output &) = delete;
-                            Output(Output &&) = delete;
-        Output              &operator=(const Output &) = delete;
-        Output              &operator=(Output &&) = delete;
-                            Output(JsonObjectConst, const std::string &type);
-        const std::string   &getName() const;
-        virtual void        activate(int value) = 0;
+        virtual                     ~Output() = default;
+                                    Output() = delete;
+                                    Output(const Output &) = delete;
+                                    Output(Output &&) = delete;
+        Output                      &operator=(const Output &) = delete;
+        Output                      &operator=(Output &&) = delete;
+                                    Output(JsonObjectConst, const std::string &type);
+        const std::string           &getName() const;
+        virtual const std::string   getStatus() const;
+        virtual void                activate(int value) = 0;
 
     private:
-        std::string         name;
-        std::string         type;
+        std::string                 name;
+        std::string                 type;
 };

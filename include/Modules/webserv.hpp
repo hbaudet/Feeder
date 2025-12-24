@@ -4,34 +4,46 @@
 
 #include "esp_log.h"
 #include "esp_http_server.h"
+#include <esp_timer.h>
 
 #include "Modules/outputManager.hpp"
 #include "Modules/routine.hpp"
 #include "helpers.hpp"
+#include "hmi.hpp"
 
-#define WEBSERV_PORT 80
+#define WEBSERV_PORT        80
+#define API_ADD_BASE_URI    "/api/add/"
 
 class WebServ {
     public:
         WebServ(const WebServ&) = delete;
         WebServ         &operator=(const WebServ&) = delete;
         static void     run();
-        static void     setHooks(Routine *, OutputManager *);
+        static void     setHooks(Routine *, OutputManager *, HMI *);
 
     private:
         static WebServ      &instance();
-        static esp_err_t    get_log_handler(httpd_req_t *req);
-        static esp_err_t    index_get_handler(httpd_req_t *req);
-        static esp_err_t    api_status_handler(httpd_req_t *req);
-        // TODO : API hooks
-        // static esp_err_t    routine_status_handler(httpd_req_t *req); // get schedule
-        // static esp_err_t    routine_update_handler(httpd_req_t *req);
-        // static esp_err_t    output_handler(httpd_req_t *req);
+        static esp_err_t    favicon(httpd_req_t *req);
+        static esp_err_t    getLogHandler(httpd_req_t *req);
+        static esp_err_t    getIndexHandler(httpd_req_t *req);
+        static esp_err_t    rebootHandler(httpd_req_t *req);
+        static esp_err_t    lockHandler(httpd_req_t *req);
+        static esp_err_t    unlockHandler(httpd_req_t *req);
+        static esp_err_t    apiStatusHandler(httpd_req_t *req);
+        static esp_err_t    apiScheduleHandler(httpd_req_t *req);
+        static esp_err_t    apiEventAddHandler(httpd_req_t *req);
+        static esp_err_t    apiUpdateScheduleHandler(httpd_req_t *req);
+
+        static void         getUptimeJson(JsonDocument &);
+        static void         getTimeJson(JsonDocument &);
+        static void         getNextEventJson(JsonDocument &);
+        static void         getModulesStatusJson(JsonDocument &);
 
         WebServ();
 
         Routine             *routine;
         OutputManager       *output;
+        HMI                 *hmi;
         httpd_handle_t      server;
         httpd_config_t      config;
 };

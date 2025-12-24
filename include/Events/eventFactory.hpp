@@ -12,6 +12,7 @@ class Event;
 class EventFactory {
     public:
         static Event        *create(JsonObjectConst);
+        static Event        *createOneShot(const std::string &, int);
         static bool         registerType(const std::string&, std::function<Event*(JsonObjectConst)>);
 
         EventFactory(const EventFactory&) = delete;

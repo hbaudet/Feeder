@@ -9,22 +9,24 @@
 #include "Outputs/output.hpp"
 #include "debug.hpp"
 
-#define PASSED      -1
-#define JUST_DONE   0
+#define PASSED              -1
+#define JUST_DONE           0
 
-#define IGNORE_EVENT_DELAY 5
+#define IGNORE_EVENT_DELAY_MS   300000      // (5 minutes)
 
-#define MAX_DELAY   1440 // minutes in a day
+#define MAX_DELAY               1440        // minutes in a day
+#define MAX_DELAY_MS            86400000    // ms in a day
 
 class Event : public Observable<OutputEvent> {
     public:
                             Event(JsonObjectConst obj, const std::string &type);
         virtual             ~Event();
         void                reset();
-        int                 trigger(int);
+        int                 trigger(uint32_t);
         virtual void        overrideParam(int value, bool oneTime) = 0;
         bool                wasTriggered() const;
         const std::string   &getType() const;
+        int                 getTriggerTimeMs() const;
         virtual int         getValue() const = 0;
 
     protected:
@@ -35,6 +37,6 @@ class Event : public Observable<OutputEvent> {
         std::string         type;
         int                 hour;
         int                 minute;
-        int                 triggerDelayMin;
+        int                 triggerDelayMs;
         bool                triggeredToday;
 };

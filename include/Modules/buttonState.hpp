@@ -46,7 +46,8 @@ enum class ButtonName {
 
 typedef struct ButtonEvent {
     ButtonEventType type;
-    ButtonName name;
+    ButtonName      name;
+    bool            emulated;
 } buttonEvent_t;
 
 class ButtonState {

@@ -10,24 +10,24 @@ Event::Event(JsonObjectConst obj, const std::string &type) : overrideValue(-1), 
     hour   = obj["hour"];
     minute = obj["minute"];
 
-    triggerDelayMin = hour * 60 + minute;
+    triggerDelayMs = (hour * 60 + minute) * 60000;
 }
 
-int                 Event::trigger(int minutesSinceMidnight) {
+int            Event::trigger(uint32_t msSinceMidnight) {
     if (triggeredToday) {
         ESP_LOGD(TAG, "Event already triggered, passing");
         return PASSED;
     }
 
-    if (minutesSinceMidnight < triggerDelayMin) {
+    if (msSinceMidnight < triggerDelayMs) {
         ESP_LOGD(TAG, "Event yet to come (%02dH%02d)", hour, minute);
-        return triggerDelayMin - minutesSinceMidnight;
+        return triggerDelayMs - msSinceMidnight;
     }
 
     triggeredToday = true;
-    if (minutesSinceMidnight > triggerDelayMin + IGNORE_EVENT_DELAY) {
+    if (msSinceMidnight > triggerDelayMs + IGNORE_EVENT_DELAY_MS) {
         // assume it was done before boot since trigger time was
-        // more than X minutes before boot
+        // more than X ms before boot
         // => do nothing and pretend its done
         return JUST_DONE;
     }
@@ -43,6 +43,10 @@ bool                Event::wasTriggered() const {
 
 const std::string   &Event::getType() const {
     return type;
+}
+
+int                 Event::getTriggerTimeMs() const {
+    return triggerDelayMs;
 }
 
 void                Event::reset() {

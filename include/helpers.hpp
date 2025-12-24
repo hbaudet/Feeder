@@ -31,4 +31,5 @@ int         pow(int x, unsigned int p);
 std::string getLogs();
 void        logToWebInit();
 int         getMinutesSinceMidnight();
+uint32_t    getMsSinceMidnight();
 std::string readFile(const char *path);

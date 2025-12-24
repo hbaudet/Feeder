@@ -16,6 +16,10 @@ void        LedOutput::activate(int value) {
     gpio_set_level(gpio, on);
 }
 
+const std::string   LedOutput::getStatus() const {
+    return on ? "On" : "Off";
+}
+
 bool    LedOutput::isRegistered = OutputFactory::registerType(TYPE, [](JsonObjectConst obj) {
     return new LedOutput(obj);
 });

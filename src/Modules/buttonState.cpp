@@ -118,7 +118,7 @@ uint8_t     ButtonState::fireEvent(ButtonEventType type) const {
         return NO_CALLBACK;
     }
 
-    ButtonEvent event { type, name };
+    ButtonEvent event { type, name, false };
 
     BaseType_t err = xQueueSend(callback, &event, (TickType_t)0);
     if (err != pdPASS) {

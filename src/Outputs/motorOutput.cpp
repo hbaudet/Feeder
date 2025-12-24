@@ -39,7 +39,7 @@ MotorOutput::MotorOutput(JsonObjectConst json) : Output(json, TYPE), count(0), r
     ESP_ERROR_CHECK(ledc_channel_config(&pwmChannel));
 }
 
-void    MotorOutput::setSpeed(int desiredSpeed) {
+void                MotorOutput::setSpeed(int desiredSpeed) {
     if (desiredSpeed > MAX_SPEED) {
         desiredSpeed = MAX_SPEED;
     } else if (desiredSpeed < 0) {
@@ -52,7 +52,7 @@ void    MotorOutput::setSpeed(int desiredSpeed) {
     }
 }
 
-void    MotorOutput::activate(int value) {
+void                MotorOutput::activate(int value) {
     ESP_LOGD(TAG, "Activating feeder motor");
     ESP_LOGD(TAG, BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(value));
     if (value & 1 << FEEDER_COUNT_BIT) {
@@ -74,11 +74,11 @@ void    MotorOutput::activate(int value) {
     ESP_ERROR_CHECK(gpio_set_level(directionPin[1], reverse ? 1 : 0));
 }
 
-void    MotorOutput::setDirection(bool reverse) {
+void                MotorOutput::setDirection(bool reverse) {
     this->reverse = reverse;
 }
 
-void    MotorOutput::stop() {
+void                MotorOutput::stop() {
     ESP_LOGD(TAG, "Stopping feeder motor");
     setSpeed(0);
     running = false;
@@ -86,6 +86,13 @@ void    MotorOutput::stop() {
 
     ESP_ERROR_CHECK(gpio_set_level(directionPin[0], 0));
     ESP_ERROR_CHECK(gpio_set_level(directionPin[1], 0));
+}
+
+const std::string   MotorOutput::getStatus() const {
+    if (running) {
+        return "Feeder motor running : " + std::to_string(count) + " doses remaining";
+    }
+    return "Feeder motor stopped";
 }
 
 bool    MotorOutput::isRegistered = OutputFactory::registerType(TYPE, [](JsonObjectConst obj) {

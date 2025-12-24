@@ -20,7 +20,8 @@
 #include "Outputs/output.hpp"
 
 #define RESET                   0
-#define WATCHDOG_TIMEOUT_MS (CONFIG_ESP_TASK_WDT_TIMEOUT_S * 1000 - 200)
+#define AUTO_LOCK_DELAY_MS      20000
+#define WATCHDOG_TIMEOUT_MS     (CONFIG_ESP_TASK_WDT_TIMEOUT_S * 1000 - 200)
 
 class HmiEvent {
     public:
@@ -34,29 +35,29 @@ enum ProgramMode {
     NextAsIs = 3 // Next ation call triggers next feeder event in queue with its own settings
 };
 
-// TODO : auto lock after delay!
-
 class HMI : public Observable<OutputEvent> {
     public:
-                        HMI() = delete;
-                        HMI(const JsonDocument&, Routine*);
-        void            run();
+                            HMI() = delete;
+                            HMI(const JsonDocument&, Routine*);
+        void                run();
+        void                setLock(bool);
+        const std::string   getStatus() const;
 
-        static void     hardwareListenerTask(void *);
-        static void     buttonListenerTask(void *);
-        static void     ledBlinkerTask(void *);
-        static void     IRAM_ATTR gpioISRInterrupt(void *);
+        static void         hardwareListenerTask(void *);
+        static void         autoLockerTask(TimerHandle_t);
+        static void         buttonListenerTask(void *);
+        static void         ledBlinkerTask(void *);
+        static void         IRAM_ATTR gpioISRInterrupt(void *);
 
     private:
-        void            toggleLock(ButtonEventType);
-        void            valueChange(ButtonEventType);
-        void            modeChange(ButtonEventType);
-        void            action(ButtonEventType);
-        void            motorFeedBack(ButtonEventType);
-        void            setPgmValue(uint8_t);
-        void            setLock(bool);
-        void            setMode(ProgramMode);
-        void            stateChanged() const;
+        void                toggleLock(ButtonEventType);
+        void                valueChange(ButtonEventType);
+        void                modeChange(ButtonEventType);
+        void                action(ButtonEventType);
+        void                motorFeedBack(ButtonEventType);
+        void                setPgmValue(uint8_t);
+        void                setMode(ProgramMode);
+        void                stateChanged() const;
 
         static QueueHandle_t                        hardwareEventQueue;
 
@@ -69,7 +70,9 @@ class HMI : public Observable<OutputEvent> {
         TaskHandle_t                                hardwareTask;
         TaskHandle_t                                buttonTask;
         TaskHandle_t                                blinkTask;
+        TimerHandle_t                               autoLockHandle;
         Routine                                     *routine;
         bool                                        blink;
         SemaphoreHandle_t                           blinkTex;
+        int                                         autoLockCounter;
 };

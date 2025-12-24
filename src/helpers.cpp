@@ -72,3 +72,12 @@ int getMinutesSinceMidnight()
     localtime_r(&now, &timeinfo);
     return timeinfo.tm_hour * 60 + timeinfo.tm_min;
 }
+
+uint32_t getMsSinceMidnight()
+{
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    return ((timeinfo.tm_hour * 60 + timeinfo.tm_min) * 60 + timeinfo.tm_sec) * 1000;
+}

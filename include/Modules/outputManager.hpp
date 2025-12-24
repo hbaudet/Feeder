@@ -14,10 +14,11 @@
 
 class OutputManager : public IObserver<OutputEvent> {
     public:
-                ~OutputManager();
-                OutputManager() = delete;
-                OutputManager(const JsonDocument &);
-        void    notify(const OutputEvent &, uint16_t) override;
+                            ~OutputManager();
+                            OutputManager() = delete;
+                            OutputManager(const JsonDocument &);
+        const std::string   getStatus() const;
+        void                notify(const OutputEvent &, uint16_t) override;
 
     private:
         std::unordered_map<std::string, Output*>               outputs;

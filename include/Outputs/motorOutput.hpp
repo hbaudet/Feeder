@@ -14,11 +14,12 @@
 
 class MotorOutput : public Output {
     public:
-                    MotorOutput(JsonObjectConst);
-        void        activate(int value) override;
-        void        setDirection(bool reverse);
-        void        stop();
-        void        setSpeed(int speed);
+                            MotorOutput(JsonObjectConst);
+        void                activate(int value) override;
+        void                setDirection(bool reverse);
+        void                stop();
+        void                setSpeed(int speed);
+        const std::string   getStatus() const override;
 
 
     private:

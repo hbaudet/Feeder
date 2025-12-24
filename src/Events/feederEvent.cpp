@@ -5,7 +5,7 @@
 static const char *TAG = "feederEvent";
 
 FeederEvent::FeederEvent(JsonObjectConst obj) : Event(obj, TYPE) {
-    doses = obj["doses"];
+    doses = obj["param"];
 }
 
 void    FeederEvent::doStuff() {

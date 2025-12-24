@@ -24,6 +24,14 @@ Event *EventFactory::create(JsonObjectConst obj) {
     return nullptr;
 }
 
+Event *EventFactory::createOneShot(const std::string &type, int value) {
+    JsonDocument json;
+    std::string jsonStr = "{\"type\":\"" + type + "\",\"hour\":23,\"minute\":59,\"param\":" + std::to_string(value) + "}";
+    deserializeJson(json, jsonStr);
+
+    return create(json.as<JsonObject>());
+}
+
 bool EventFactory::registerType(const std::string &type, std::function<Event*(JsonObjectConst)> func) {
     auto &instance = EventFactory::instance();
     instance.makers[type] = func;

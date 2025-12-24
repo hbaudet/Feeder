@@ -29,7 +29,7 @@ extern "C" int app_main(void)
     hmi = new HMI(doc, feederRoutine);
     assert(feederRoutine->addSubscriber(outManager, "Outputmanager subscribing to feeder routine") == true);
     assert(hmi->addSubscriber(outManager, "Outputmanager subscribing to hmi") == true);
-    WebServ::setHooks(feederRoutine, outManager);
+    WebServ::setHooks(feederRoutine, outManager, hmi);
     hmi->run();
     feederRoutine->run();
     WebServ::run();

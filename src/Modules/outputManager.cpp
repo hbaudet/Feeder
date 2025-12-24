@@ -32,6 +32,33 @@ OutputManager::OutputManager(const JsonDocument &json) {
     }
 }
 
+const std::string OutputManager::getStatus() const {
+    std::string ret;
+
+    ret.reserve(256);
+    ret += "{\"Outputs\":[";
+
+    bool first = true;
+    for (auto & [name, out] : outputs) {
+        if (!first) {
+            ret += ",";
+        }
+        first = false;
+
+        ret += "{\"";
+        ret += name;
+        ret += "\":\"";
+        ret += out->getStatus();
+        ret += "\"}";
+    }
+
+    ret += "],\"Length\":";
+    ret += std::to_string(ret.length());
+    ret += "}";
+
+    return ret;
+}
+
 void    OutputManager::notify(const OutputEvent &event, uint16_t value) {
     ESP_LOGD(TAG, "Output manager notified to perform %s at %d", M_ENUM_CSTR(event), value);
     for (Output *out : ioMatrix[M_ENUM_STR(event)]) {

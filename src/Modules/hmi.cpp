@@ -29,7 +29,7 @@ HMI::HMI(const JsonDocument &json, Routine *routine) : lock(true), running(false
     blinkTex = xSemaphoreCreateBinary();
 }
 
-void HMI::run() {
+void                HMI::run() {
     buttonEventQueue = xQueueCreate(25, sizeof(ButtonEvent));
     for (auto &btn : buttons) {
         btn.second->setCallBack(buttonEventQueue);
@@ -38,9 +38,17 @@ void HMI::run() {
     xTaskCreate(HMI::hardwareListenerTask, "HardwareTask", 4096, this, 1, &hardwareTask);
     xTaskCreatePinnedToCore(HMI::buttonListenerTask, "ButtonTask", 4096, this, 1, &buttonTask, 1);
     xTaskCreatePinnedToCore(HMI::ledBlinkerTask, "BlinkTask", 4096, this, 1, &blinkTask, 1);
+    autoLockHandle = xTimerCreate("AutoLockTimer", pdMS_TO_TICKS(AUTO_LOCK_DELAY_MS), pdFALSE, this, HMI::autoLockerTask);
 }
 
-void    HMI::toggleLock(ButtonEventType type) {
+const std::string   HMI::getStatus() const {
+    if (lock) {
+        return "locked";
+    }
+    return "unlocked";
+}
+
+void                HMI::toggleLock(ButtonEventType type) {
     if (type != ButtonEventType::LongPressed) {
         return;
     }
@@ -50,18 +58,13 @@ void    HMI::toggleLock(ButtonEventType type) {
     setMode(ProgramMode(RESET));
 }
 
-void    HMI::action(ButtonEventType type) {
+void                HMI::action(ButtonEventType type) {
     if (type != ButtonEventType::Released) {
         return;
     }
     Event * evt;
     if (mode == ProgramMode::OneTime) {
-        JsonDocument json;
-        std::string str;
-
-        str = "{\"type\":\"feeder\",\"hour\":23,\"minute\":59,\"doses\":" + std::to_string(pgmValue) + "}";
-        deserializeJson(json, str);
-        evt = EventFactory::create(json.as<JsonObjectConst>());
+        evt = EventFactory::createOneShot("feeder", pgmValue);
         evt->addSubscriber(routine, "Subscribing to single use event");
     } else {
         evt = routine->nextEvent("feeder");
@@ -73,7 +76,7 @@ void    HMI::action(ButtonEventType type) {
     if (mode == ProgramMode::ReplaceNext) {
         evt->overrideParam(pgmValue, true);
     }
-    evt->trigger(MAX_DELAY);
+    evt->trigger(MAX_DELAY_MS);
     if (mode == ProgramMode::OneTime) {
         delete evt;
     }
@@ -81,7 +84,7 @@ void    HMI::action(ButtonEventType type) {
     setPgmValue(1);
 }
 
-void    HMI::valueChange(ButtonEventType type) {
+void                HMI::valueChange(ButtonEventType type) {
     if (type == ButtonEventType::Pressed) {
         setPgmValue((pgmValue + 1) % (PGM_MAX_VALUE + 1));
     } else if (type == ButtonEventType::LongReleased) {
@@ -89,7 +92,7 @@ void    HMI::valueChange(ButtonEventType type) {
     }
 }
 
-void    HMI::modeChange(ButtonEventType type) {
+void                HMI::modeChange(ButtonEventType type) {
     if (type == ButtonEventType::Released) {
         setMode(ProgramMode((mode + 1) % 2));
     } else if (type == ButtonEventType::LongReleased) {
@@ -97,7 +100,7 @@ void    HMI::modeChange(ButtonEventType type) {
     }
 }
 
-void    HMI::motorFeedBack(ButtonEventType type) {
+void                HMI::motorFeedBack(ButtonEventType type) {
     if (type == ButtonEventType::Pressed) {
         for (auto obs : observers) {
             obs->notify(OutputEvent::feederOut, 1 << FEEDER_FEEDBACK_BIT | 1);
@@ -105,19 +108,24 @@ void    HMI::motorFeedBack(ButtonEventType type) {
     }
 }
 
-void    HMI::setLock(bool lockHMI) {
+void                HMI::setLock(bool lockHMI) {
+    if (lockHMI == lock) {
+        return;
+    }
     lock = lockHMI;
     ESP_LOGD(TAG, "Interface is now %s", lock ? "locked" : "unlocked");
     if (lock) {
         ESP_LOGD(TAG, "Turning HMI off");
+        xTimerStop(autoLockHandle, 0);
         xSemaphoreTake(blinkTex, portMAX_DELAY);
     } else {
         xSemaphoreGive(blinkTex);
+        xTimerStart(autoLockHandle, 0);
     }
     stateChanged();
 }
 
-void    HMI::setMode(ProgramMode pgmMode) {
+void                HMI::setMode(ProgramMode pgmMode) {
     if (pgmMode == ProgramMode::NextAsIs && !routine->nextEvent("feeder")) {
         ESP_LOGD(TAG, "No next event, mode unchanged");
         return;
@@ -127,13 +135,13 @@ void    HMI::setMode(ProgramMode pgmMode) {
     stateChanged();
 }
 
-void    HMI::setPgmValue(uint8_t value) {
+void                HMI::setPgmValue(uint8_t value) {
     pgmValue = value;
     ESP_LOGD(TAG, "Program value set to %d", pgmValue);
     stateChanged();
 }
 
-void    HMI::stateChanged() const {
+void                HMI::stateChanged() const {
     int value = 0;
 
     value |= !lock << HMI_LOCK_BIT;
@@ -145,7 +153,7 @@ void    HMI::stateChanged() const {
     }
 }
 
-void    HMI::hardwareListenerTask(void *arg) {
+void                HMI::hardwareListenerTask(void *arg) {
     HMI         *caller = static_cast<HMI *>(arg);
     HmiEvent    evt;
     ESP_LOGD(TAG, "Hardware listener running");
@@ -155,15 +163,19 @@ void    HMI::hardwareListenerTask(void *arg) {
             ESP_LOGD(TAG, "Trigger return : %u", err);
             // TODO : HANDLE/LOG error
         }
-        UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
-        ESP_LOGD(TAG, "Stack free : %u words\n", watermark);
     }
     ESP_LOGD(TAG, "Hardware listener stopped");
     caller->running = false;
-    delete caller;
+    vTaskDelete(NULL);
 }
 
-void    HMI::buttonListenerTask(void *arg) {
+void                HMI::autoLockerTask(TimerHandle_t timer) {
+    HMI *caller = static_cast<HMI*>(pvTimerGetTimerID(timer));
+    ButtonEvent event { ButtonEventType::LongPressed, ButtonName::MasterLock, true };
+    xQueueSend(caller->buttonEventQueue, &event, (TickType_t)0);
+}
+
+void                HMI::buttonListenerTask(void *arg) {
     ESP_LOGD(TAG, "Created button listening task");
     HMI         *caller = static_cast<HMI *>(arg);
     ButtonEvent btn;
@@ -171,6 +183,10 @@ void    HMI::buttonListenerTask(void *arg) {
         ESP_LOGD(TAG, "Waiting for button event");
         if (xQueueReceive(caller->buttonEventQueue, &btn, portMAX_DELAY)) {
             ESP_LOGD(TAG, "Button %s is %s", CSTR(magic_enum::enum_name(btn.name)), CSTR(magic_enum::enum_name(btn.type)));
+
+            if (!btn.emulated && !(btn.name == ButtonName::MotorTrigger)) {
+                xTimerReset(caller->autoLockHandle, 0);
+            }
             switch (btn.name)
             {
                 case ButtonName::MasterLock:
@@ -192,15 +208,13 @@ void    HMI::buttonListenerTask(void *arg) {
                     break;
             }
         }
-        UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
-        ESP_LOGD(TAG, "Stack free : %u words\n", watermark);
     }
     ESP_LOGD(TAG, "Button listener stopped");
     caller->running = false;
-    delete caller;
+    vTaskDelete(NULL);
 }
 
-void    HMI::ledBlinkerTask(void *arg) {
+void                HMI::ledBlinkerTask(void *arg) {
     HMI         *caller = static_cast<HMI *>(arg);
     TickType_t  lastBlink = xTaskGetTickCount();
     Event       *next;
@@ -216,18 +230,16 @@ void    HMI::ledBlinkerTask(void *arg) {
             xSemaphoreGive(caller->blinkTex);
         }
         xTaskDelayUntil(&(lastBlink), pdMS_TO_TICKS(BLINK_PERIOD_MS));
-
-        UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
-        ESP_LOGD(TAG, "Stack free : %u words\n", watermark);
     }
     ESP_LOGD(TAG, "LED blinker stopped");
     caller->running = false;
     delete caller;
+    vTaskDelete(NULL);
 }
 
 QueueHandle_t HMI::hardwareEventQueue = xQueueCreate(25, sizeof(HmiEvent));
 
-void     IRAM_ATTR HMI::gpioISRInterrupt(void *arg) {
+void                IRAM_ATTR HMI::gpioISRInterrupt(void *arg) {
     int pin = (int)arg;
     bool pressed = !gpio_get_level((gpio_num_t)pin);
     HmiEvent evt { pin, pressed };

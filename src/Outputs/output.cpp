@@ -10,3 +10,7 @@ Output::Output(JsonObjectConst obj, const std::string &type) : type(type) {
 const std::string   &Output::getName() const {
     return name;
 }
+
+const std::string   Output::getStatus() const {
+    return "ok";
+}

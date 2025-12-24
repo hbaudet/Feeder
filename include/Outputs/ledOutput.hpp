@@ -8,8 +8,9 @@
 
 class LedOutput : public Output {
     public:
-                    LedOutput(JsonObjectConst);
-        void        activate(int value) override;
+                            LedOutput(JsonObjectConst);
+        void                activate(int value) override;
+        const std::string   getStatus() const override;
 
 
     private:

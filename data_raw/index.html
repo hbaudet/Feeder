@@ -10,8 +10,19 @@
     </head>
     <body>
         <h1>🐈 Miaou Homepage 🐈</h1>
-        <button onclick="fetch('/api/status').then(r => r.json()).then(j => alert(JSON.stringify(j)))">
-            Get Status
+        <button onclick="fetch('/api/add/feeder/1')">
+            They don't deserve it
+        </button><br>
+        <br>
+        <button onclick="fetch('/restart').then(r => r.text()).then(alert)">
+            Dans le doute reboot
+        </button><br>
+        <button onclick="fetch('/lock').then(r => r.text()).then(alert)">
+            LOCK
         </button>
+        <button onclick="fetch('/unlock').then(r => r.text()).then(alert)">
+            UNLOCK
+        </button>
+
     </body>
 </html>
