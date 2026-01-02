@@ -24,6 +24,7 @@ void                Routine::populateEvents(const JsonDocument &doc) {
         events.push_back(t);
         t->addSubscriber(this, std::string("Feeder Routine subscribing to ").append(t->getType().c_str()));
     }
+    std::sort(events.begin(), events.end());
     ESP_LOGD(TAG, "Created %d event%s", events.size(), events.size() > 1 ? "s." : ".");
 }
 
@@ -44,8 +45,9 @@ int                 Routine::update() {
         // or triggered a long time ago (== PASSED // -1)
         // loop exited so no more triggers available
         // sleep until reset
-        ESP_LOGD(TAG, "No more events available!");
-        return MAX_DELAY_MS - msSinceMidnight;
+        ESP_LOGI(TAG, "No more events available, resetting schedule and sleeping until 00h01");
+        reset();
+        return (MAX_DELAY_MS - msSinceMidnight) + 60000; // adding 1min to be sure midnight IS passed
     }
     ESP_LOGI(TAG, "%d minutes before next trigger", msBeforeNext / 60000);
     return msBeforeNext;

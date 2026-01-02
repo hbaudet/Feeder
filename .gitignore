@@ -7,3 +7,5 @@
 include/wifiSetup.hpp
 data/*
 sdkconfig.*
+managed_components
+dependencies.lock

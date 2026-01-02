@@ -52,3 +52,11 @@ int                 Event::getTriggerTimeMs() const {
 void                Event::reset() {
     triggeredToday = false;
 }
+
+bool                Event::operator<(const Event &evt) const {
+    if (evt.hour != hour) {
+        return hour < evt.hour;
+    }
+
+    return minute < evt.minute;
+}

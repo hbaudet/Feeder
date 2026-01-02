@@ -28,6 +28,7 @@ class Event : public Observable<OutputEvent> {
         const std::string   &getType() const;
         int                 getTriggerTimeMs() const;
         virtual int         getValue() const = 0;
+        bool                operator<(const Event &) const;
 
     protected:
         virtual void        doStuff() = 0;

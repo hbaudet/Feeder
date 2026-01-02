@@ -15,6 +15,7 @@ void wifiInit()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_wifi_init(&cfg);
     esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_wifi_set_ps(WIFI_PS_NONE);
     wifi_config_t wifi_config = {};
     strcpy((char*)wifi_config.sta.ssid, WIFI_SSID);
     strcpy((char*)wifi_config.sta.password, WIFI_PASS);
@@ -23,18 +24,25 @@ void wifiInit()
     esp_wifi_connect();
 
     ESP_LOGI(TAG, "Connecting to Wi-Fi...");
+
+    mdns_free();
+    esp_err_t err = mdns_init();
+    if (err) {
+        ESP_LOGE(TAG, "MDNS Init failed: %d\n", err);
+        return;
+    }
+    mdns_hostname_set("onafaim");
+    mdns_instance_name_set("Holy Cat Grail");
+
     vTaskDelay(pdMS_TO_TICKS(5000));
 }
 
-// Initialisation SNTP
-void sntpInit()
-{
+void sntpInit() {
     ESP_LOGI(TAG, "Initializing SNTP");
     esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
     esp_sntp_setservername(0, "pool.ntp.org");
     esp_sntp_init();
 
-    // Attendre la sync (timeout simple)
     time_t now = 0;
     int retry = 0;
     const int retry_count = 10;
@@ -44,9 +52,20 @@ void sntpInit()
     }
 }
 
-// --- Fonction helper pour init l'heure ---
-void initLocalSetup()
-{
+static void wifiEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    wifi_event_t wifiId = static_cast<wifi_event_t>(id);
+
+    if (id == WIFI_EVENT_STA_DISCONNECTED) {
+        ESP_LOGW(TAG, "Wi-Fi disconnected, reconnecting...");
+        esp_wifi_connect();
+    } else {
+        ESP_LOGI(TAG, "Received %s event : %s", base, M_ENUM_CSTR(wifiId));
+    }
+}
+
+void initLocalSetup() {
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifiEvent, NULL, NULL));
     wifiInit();
     sntpInit();
     setenv("TZ", "CET-1CEST-2,M3.5.0/2,M10.5.0/3", 1); // Paris time, include DST
@@ -60,9 +79,7 @@ void initLocalSetup()
              timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
-// Initialisation SPIFFS
-void initStorage()
-{
+void initStorage() {
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {

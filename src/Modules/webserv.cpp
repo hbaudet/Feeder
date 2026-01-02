@@ -38,6 +38,8 @@ esp_err_t   WebServ::favicon(httpd_req_t *req) {
 
 esp_err_t   WebServ::getLogHandler(httpd_req_t *req) {
     // TODO : see if websocket for live logging doable
+
+    ESP_LOGI("HEAP/LOG", "Free heap: %lu", esp_get_free_heap_size());
     httpd_resp_set_type(req, "text/html");
     std::string logs = getLogs();
     httpd_resp_send(req, logs.c_str(), logs.size());
@@ -143,7 +145,8 @@ void        WebServ::getModulesStatusJson(JsonDocument &doc) {
     if (instance().hmi) {
         root["HMI"] = instance().hmi->getStatus();
     }
-    root["Heap"] = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    root["Fragmentation"] = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    root["Heap"] = esp_get_free_heap_size();
     root["Stack"] = uxTaskGetStackHighWaterMark(NULL);
 }
 
@@ -268,11 +271,18 @@ void        WebServ::setHooks(Routine *rout, OutputManager *out, HMI *hmi) {
     instance().hmi = hmi;
 }
 
-void        registerUri(httpd_handle_t &client, httpd_uri_t *uri) {
-    auto err = httpd_register_uri_handler(client, uri);
+void        WebServ::registerUri(const char *uri, httpd_method_t method, esp_err_t (*handler)(httpd_req_t *r)) {
+    httpd_uri_t httpUri = {
+            .uri = uri,
+            .method = method,
+            .handler = handler,
+            .user_ctx = nullptr
+    };
+
+    auto err = httpd_register_uri_handler(instance().server, &httpUri);
 
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Could not register %s handler", uri->uri);
+        ESP_LOGE(TAG, "Could not register %s handler", uri);
     }
 }
 
@@ -280,76 +290,16 @@ void        WebServ::run() {
     if (httpd_start(&(instance().server), &(instance().config)) == ESP_OK)
     {
         logToWebInit();
-        httpd_uri_t favicon_uri = {
-            .uri = "/favicon.ico",
-            .method = HTTP_GET,
-            .handler = favicon,
-            .user_ctx = nullptr};
-
-        httpd_uri_t index_uri = {
-            .uri = "/",
-            .method = HTTP_GET,
-            .handler = getIndexHandler,
-            .user_ctx = nullptr};
-
-        httpd_uri_t restart_uri = {
-            .uri = "/restart",
-            .method = HTTP_GET,
-            .handler = rebootHandler,
-            .user_ctx = nullptr};
-
-        httpd_uri_t lock_hmi_uri = {
-            .uri = "/lock",
-            .method = HTTP_GET,
-            .handler = lockHandler,
-            .user_ctx = nullptr};
-
-        httpd_uri_t unlock_hmi_uri = {
-            .uri = "/unlock",
-            .method = HTTP_GET,
-            .handler = unlockHandler,
-            .user_ctx = nullptr};
-
-        httpd_uri_t status_uri = {
-            .uri = "/api/status",
-            .method = HTTP_GET,
-            .handler = apiStatusHandler,
-            .user_ctx = nullptr};
-
-        httpd_uri_t schedule_get_uri = {
-            .uri = "/api/schedule",
-            .method = HTTP_GET,
-            .handler = apiScheduleHandler,
-            .user_ctx = nullptr};
-
-        httpd_uri_t event_add_uri = {
-            .uri = "/api/add/*",
-            .method = HTTP_GET,
-            .handler = apiEventAddHandler,
-            .user_ctx = nullptr};
-
-        httpd_uri_t update_schedule_uri = {
-            .uri = "/api/update/schedule",
-            .method = HTTP_POST,
-            .handler = apiUpdateScheduleHandler,
-            .user_ctx = nullptr};
-
-        httpd_uri_t logs_uri = {
-            .uri = "/logs",
-            .method = HTTP_GET,
-            .handler = getLogHandler,
-            .user_ctx = nullptr};
-
-        registerUri(instance().server, &favicon_uri);
-        registerUri(instance().server, &index_uri);
-        registerUri(instance().server, &restart_uri);
-        registerUri(instance().server, &lock_hmi_uri);
-        registerUri(instance().server, &unlock_hmi_uri);
-        registerUri(instance().server, &status_uri);
-        registerUri(instance().server, &schedule_get_uri);
-        registerUri(instance().server, &event_add_uri);
-        registerUri(instance().server, &update_schedule_uri);
-        registerUri(instance().server, &logs_uri);
+        registerUri("/favicon.ico",         HTTP_GET,   favicon);
+        registerUri("/",                    HTTP_GET,   getIndexHandler);
+        registerUri("/restart",             HTTP_GET,   rebootHandler);
+        registerUri("/lock",                HTTP_GET,   lockHandler);
+        registerUri("/unlock",              HTTP_GET,   unlockHandler);
+        registerUri("/api/status",          HTTP_GET,   apiStatusHandler);
+        registerUri("/api/schedule",        HTTP_GET,   apiScheduleHandler);
+        registerUri("/api/add/*",           HTTP_GET,   apiEventAddHandler);
+        registerUri("/api/update/schedule", HTTP_POST,  apiUpdateScheduleHandler);
+        registerUri("/logs",                HTTP_GET,   getLogHandler);
 
         ESP_LOGI(TAG, "HTTP server ready on port %d", instance().config.server_port);
     }

@@ -34,6 +34,7 @@ class WebServ {
         static esp_err_t    apiEventAddHandler(httpd_req_t *req);
         static esp_err_t    apiUpdateScheduleHandler(httpd_req_t *req);
 
+        static void         registerUri(const char *uri, httpd_method_t method, esp_err_t (*handler)(httpd_req_t *r));
         static void         getUptimeJson(JsonDocument &);
         static void         getTimeJson(JsonDocument &);
         static void         getNextEventJson(JsonDocument &);

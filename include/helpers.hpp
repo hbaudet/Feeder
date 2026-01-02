@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <time.h>
+#include "magic_enum/magic_enum.hpp"
 
 #include "esp_log.h"
 
@@ -25,7 +26,8 @@
   ((byte) & 0x02 ? '1' : '0'), \
   ((byte) & 0x01 ? '1' : '0')
 
-#define WEB_LOG_SIZE    250
+#define WEB_LOG_BUFFER_SIZE   250
+#define WEB_LOG_SIZE          256
 
 int         pow(int x, unsigned int p);
 std::string getLogs();

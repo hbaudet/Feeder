@@ -8,45 +8,45 @@
     "triggers": [
         {
             "type": "feeder",
-            "hour": 7,
-            "minute": 0,
+            "hour": 6,
+            "minute": 45,
             "param": 4
         },
         {
             "type": "feeder",
-            "hour": 9,
-            "minute": 30,
-            "param": 4
-        },
-        {
-            "type": "feeder",
-            "hour": 12,
-            "minute": 0,
+            "hour": 8,
+            "minute": 45,
             "param": 3
         },
         {
             "type": "feeder",
-            "hour": 14,
+            "hour": 11,
             "minute": 30,
-            "param": 4
+            "param": 3
         },
         {
             "type": "feeder",
-            "hour": 17,
-            "minute": 0,
-            "param": 4
+            "hour": 13,
+            "minute": 45,
+            "param": 3
         },
         {
             "type": "feeder",
-            "hour": 19,
-            "minute": 0,
+            "hour": 16,
+            "minute": 30,
+            "param": 3
+        },
+        {
+            "type": "feeder",
+            "hour": 18,
+            "minute": 45,
             "param": 3
         },
         {
             "type": "feeder",
             "hour": 21,
             "minute": 0,
-            "param": 4
+            "param": 3
         },
         {
             "type": "feeder",

@@ -11,6 +11,7 @@
 #include "esp_spiffs.h"
 #include "esp_event.h"
 #include "nvs_flash.h"
+#include "mdns.h"
 
 #include "debug.hpp"
 #include "wifiSetup.hpp"
