@@ -24,7 +24,7 @@ void                Routine::populateEvents(const JsonDocument &doc) {
         events.push_back(t);
         t->addSubscriber(this, std::string("Feeder Routine subscribing to ").append(t->getType().c_str()));
     }
-    std::sort(events.begin(), events.end());
+    std::sort(events.begin(), events.end(), [](const Event *a, const Event *b){ return *a < *b; });
     ESP_LOGD(TAG, "Created %d event%s", events.size(), events.size() > 1 ? "s." : ".");
 }
 
@@ -85,9 +85,40 @@ void                Routine::run() {
 
 const std::string   Routine::getStatus() const {
     if (routineHandle) {
-        return "ok";
-    }
+        std::string ret;
+        std::map<std::string, int> totals;
 
+        ret.reserve(256);
+        ret += "{\"Events\":[";
+
+        for (auto evt : events) {
+            if (totals.count(evt->getType()) != 0) {
+                totals[evt->getType()] += evt->getValue();
+            } else {
+                totals[evt->getType()] = evt->getValue();
+            }
+        }
+
+        bool first = true;
+        for (auto &[type, sum] : totals) {
+            if (!first) {
+                ret += ",";
+            }
+            first = false;
+
+            ret += "{\"";
+            ret += type;
+            ret += "\":\"";
+            ret += std::to_string(sum);
+            ret += "\"}";
+        }
+
+        ret += "],\"Length\":";
+        ret += std::to_string(ret.length());
+        ret += "}";
+
+        return ret;
+    }
     return "Routine Task not running";
 }
 

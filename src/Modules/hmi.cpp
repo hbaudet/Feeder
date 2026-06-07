@@ -53,9 +53,6 @@ void                HMI::toggleLock(ButtonEventType type) {
         return;
     }
     setLock(!lock);
-
-    setPgmValue(lock ? RESET : 1);
-    setMode(ProgramMode(RESET));
 }
 
 void                HMI::action(ButtonEventType type) {
@@ -114,6 +111,10 @@ void                HMI::setLock(bool lockHMI) {
     }
     lock = lockHMI;
     ESP_LOGD(TAG, "Interface is now %s", lock ? "locked" : "unlocked");
+
+    setPgmValue(lock ? RESET : 1);
+    setMode(ProgramMode(RESET));
+
     if (lock) {
         ESP_LOGD(TAG, "Turning HMI off");
         xTimerStop(autoLockHandle, 0);

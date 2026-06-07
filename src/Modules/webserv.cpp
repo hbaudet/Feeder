@@ -130,10 +130,15 @@ void        WebServ::getNextEventJson(JsonDocument &doc) {
 
 void        WebServ::getModulesStatusJson(JsonDocument &doc) {
     JsonObject root = doc["status"].to<JsonObject>();
+    JsonDocument events;
     JsonDocument outputs;
 
     if (instance().routine) {
-        root["Scheduler"] = instance().routine->getStatus();
+        if (deserializeJson(events, instance().routine->getStatus()) != DeserializationError::Ok) {
+            root["Scheduler"] = "Unable to get scheduler status";
+        } else {
+            root["Scheduler"] = events.as<JsonObject>();
+        }
     }
     if (instance().output) {
         if (deserializeJson(outputs, instance().output->getStatus()) != DeserializationError::Ok) {
